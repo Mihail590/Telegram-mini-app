@@ -4,10 +4,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <title>Mini App</title>
+    <title>Мини-приложение Погода</title>
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        /* Общие стили */
         * {
             margin: 0;
             padding: 0;
@@ -16,8 +17,10 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: var(--tg-theme-bg-color, #ffffff);
-            color: var(--tg-theme-text-color, #000000);
+            background: var(--tg-theme-bg-color, #f0f2f5);
+            /* Используем тему Telegram или светло-серый */
+            color: var(--tg-theme-text-color, #333);
+            /* Используем тему Telegram или темный текст */
             padding: 20px;
             min-height: 100vh;
             display: flex;
@@ -29,126 +32,322 @@
         .container {
             max-width: 400px;
             width: 100%;
+            background-color: var(--tg-theme-secondary-bg-color, #fff);
+            /* Вторичный фон Telegram или белый */
+            padding: 25px;
+            border-radius: 16px;
+            /* Скругленные углы */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            /* Более выраженная тень */
             text-align: center;
         }
 
+        h1 {
+            color: var(--tg-theme-button-color, #007bff);
+            /* Цвет кнопки Telegram или синий */
+            margin-bottom: 25px;
+            /* Увеличим отступ */
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        /* Поле ввода города */
+        input[type="text"] {
+            width: 100%;
+            padding: 14px 18px;
+            /* Увеличим padding */
+            margin-bottom: 20px;
+            /* Увеличим отступ */
+            border: 1px solid var(--tg-theme-hint-color, #ccc);
+            /* Цвет поля ввода */
+            border-radius: 12px;
+            /* Скругленные углы */
+            font-size: 17px;
+            background-color: var(--tg-theme-bg-color, #f8f9fa);
+            /* Фон поля ввода */
+            color: var(--tg-theme-text-color, #333);
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--tg-theme-hint-color, #aaa);
+        }
+
+        /* Кнопка */
         button {
-            background: var(--tg-theme-button-color, #2481cc);
+            background: var(--tg-theme-button-color, #007bff);
+            /* Цвет кнопки Telegram или синий */
             color: var(--tg-theme-button-text-color, #ffffff);
+            /* Цвет текста кнопки */
+            padding: 14px 24px;
             border: none;
             border-radius: 12px;
-            padding: 14px 24px;
-            font-size: 18px;
-            font-weight: 500;
+            /* Скругленные углы */
             cursor: pointer;
-            transition: opacity 0.2s;
+            font-size: 18px;
+            /* Увеличим шрифт */
+            font-weight: 500;
             width: 100%;
-            margin-bottom: 24px;
+            transition: opacity 0.2s ease;
+            /* Плавный переход при нажатии */
         }
 
         button:active {
             opacity: 0.7;
+            /* Эффект нажатия */
         }
 
         button:disabled {
-            opacity: 0.5;
+            background-color: var(--tg-theme-hint-color, #cccccc);
+            /* Серый цвет для неактивной кнопки */
+            opacity: 0.6;
             cursor: not-allowed;
         }
 
-        .result {
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
-            border-radius: 16px;
-            padding: 20px;
-            text-align: left;
-            width: 100%;
-            word-wrap: break-word;
+        /* Индикатор загрузки */
+        .loading-indicator {
+            display: none;
+            margin-top: 20px;
+            font-style: italic;
+            color: var(--tg-theme-hint-color, #888888);
             font-size: 15px;
-            line-height: 1.4;
-            color: var(--tg-theme-text-color, #000000);
-            min-height: 120px;
         }
 
-        .loading {
-            display: none;
-            margin-top: 16px;
-            color: var(--tg-theme-hint-color, #888888);
+        /* Область вывода результата */
+        #resultArea {
+            margin-top: 25px;
+            padding: 20px;
+            background-color: var(--tg-theme-secondary-bg-color, #e9ecef);
+            border-radius: 16px;
+            min-height: 100px;
+            /* Увеличим минимальную высоту */
+            text-align: left;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            /* Для сохранения переносов строк, если они есть */
+            font-size: 16px;
+            line-height: 1.4;
+            display: flex;
+            /* Используем flex для выравнивания контента */
+            flex-direction: column;
+            justify-content: center;
+            /* Центрируем контент по вертикали, если он короткий */
         }
 
         .error {
             color: #e53935;
+            /* Красный цвет для ошибок */
+            font-weight: 500;
+        }
+
+        /* Отображение информации о погоде */
+        .weather-info {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            /* Разносим элементы */
+            flex-wrap: wrap;
+            /* Перенос на новую строку на маленьких экранах */
+            gap: 15px;
+            /* Расстояние между элементами */
+        }
+
+        .weather-info div {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            /* Центрируем текст внутри блока */
+        }
+
+        .weather-info img {
+            width: 60px;
+            /* Увеличим размер иконки */
+            height: 60px;
+            vertical-align: middle;
+            margin-bottom: 10px;
+            /* Отступ под иконкой */
+        }
+
+        .weather-info span:first-of-type {
+            /* Температура */
+            font-size: 32px;
+            /* Большой шрифт для температуры */
+            font-weight: bold;
+            color: var(--tg-theme-text-color, #333);
+        }
+
+        .weather-info strong {
+            /* Название города */
+            font-size: 20px;
+            margin-bottom: 5px;
+            color: var(--tg-theme-text-color, #333);
+        }
+
+        .weather-info span:last-of-type {
+            /* Описание погоды */
+            font-size: 16px;
+            color: var(--tg-theme-hint-color, #555);
         }
     </style>
 </head>
 
 <body>
     <div class="container">
-        <button id="fetchButton">📡 Запросить данные</button>
-        <div class="result" id="resultArea">
-            Нажмите кнопку, чтобы получить результат из API
+        <h1>Прогноз погоды ☁️</h1>
+        <input type="text" id="cityInput" placeholder="Введите название города...">
+        <button id="fetchButton">📡 Узнать погоду</button>
+        <div id="loadingIndicator" class="loading-indicator">⏳ Загрузка...</div>
+        <div id="resultArea">
+            Введите название города и нажмите кнопку, чтобы увидеть прогноз.
         </div>
-        <div class="loading" id="loadingIndicator">⏳ Загрузка...</div>
     </div>
 
     <script>
-        // Инициализация Telegram WebApp
+        // Инициализация Telegram WebApp SDK
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Растягиваем на всё доступное пространство
-        tg.ready();
+        tg.expand(); // Растягиваем мини-приложение на всё доступное пространство
+        tg.ready();  // Сообщаем Telegram, что приложение готово
 
-        // Элементы DOM
+        // Получаем ссылки на DOM-элементы
+        const cityInput = document.getElementById('cityInput');
         const button = document.getElementById('fetchButton');
         const resultArea = document.getElementById('resultArea');
         const loadingIndicator = document.getElementById('loadingIndicator');
 
-        // Пример API: получаем случайный пост с JSONPlaceholder
-        const API_URL = 'https://jsonplaceholder.typicode.com/posts/1';
+        // --- НАСТРОЙКИ API OPENWEATHERMAP ---
+        // !!! ВАЖНО: Замените 'ВАШ_API_КЛЮЧ' на ваш реальный API ключ, полученный с OpenWeatherMap.org !!!
+        const API_KEY = 'ВАШ_API_КЛЮЧ';
+        // Язык ответа API (ru - русский, en - английский и т.д.)
+        const LANG = 'ru';
+        // Единицы измерения: 'metric' для Цельсия, 'imperial' для Фаренгейта
+        const UNITS = 'metric';
+        // ------------------------------------
 
-        async function fetchData() {
-            // Блокируем кнопку на время запроса
+        // Вспомогательная функция для экранирования HTML-сущностей, чтобы предотвратить XSS-атаки
+        function escapeHtml(unsafe) {
+            if (!unsafe) return ''; // Возвращаем пустую строку, если входные данные пустые
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Асинхронная функция для получения данных о погоде
+        async function fetchWeather() {
+            const city = cityInput.value.trim(); // Получаем название города и убираем лишние пробелы
+
+            // Проверяем, введено ли название города
+            if (!city) {
+                resultArea.innerHTML = '<span class="error">❌ Пожалуйста, введите название города.</span>';
+                // Восстанавливаем состояние кнопки, если город не был введен
+                button.disabled = false;
+                loadingIndicator.style.display = 'none';
+                return;
+            }
+
+            // Блокируем кнопку и показываем индикатор загрузки на время запроса
             button.disabled = true;
             loadingIndicator.style.display = 'block';
-            resultArea.innerHTML = '';
+            resultArea.innerHTML = ''; // Очищаем предыдущий результат
+
+            // Формируем URL для запроса к API OpenWeatherMap
+            const apiUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&appid=${API_KEY}&lang=${LANG}&units=${UNITS}`;
 
             try {
-                const response = await fetch(API_URL);
+                // Выполняем GET-запрос к API
+                const response = await fetch(apiUrl);
+
+                // Проверяем, успешен ли ответ (код 2xx)
                 if (!response.ok) {
-                    throw new Error(`Ошибка HTTP: ${response.status}`);
+                    const errorData = await response.json(); // Пытаемся получить тело ошибки
+                    let errorMessage = `Ошибка ${response.status}: ${response.statusText}`; // Общее сообщение
+                    // Если в ответе есть конкретное сообщение от API, используем его
+                    if (errorData && errorData.message) {
+                        errorMessage = errorData.message;
+                    }
+                    throw new Error(errorMessage); // Создаем ошибку для дальнейшей обработки
                 }
+
+                // Парсим JSON-ответ
                 const data = await response.json();
 
-                // Формируем красивый вывод
-                const output = `
-                <strong>📌 ID:</strong> ${data.id}<br>
-                <strong>📝 Заголовок:</strong> ${escapeHtml(data.title)}<br>
-                <strong>📄 Текст:</strong><br> ${escapeHtml(data.body)}
-            `;
-                resultArea.innerHTML = output;
+                // Проверяем, получили ли мы данные о погоде
+                if (data && data.weather && data.weather.length > 0) {
+                    const weatherDescription = escapeHtml(data.weather[0].description);
+                    // Округляем температуру до целого числа
+                    const temperature = Math.round(data.main.temp);
+                    const iconCode = data.weather[0].icon; // Код иконки погоды
+                    const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`; // URL иконки
+                    const cityName = escapeHtml(data.name); // Название города
+                    const country = escapeHtml(data.sys.country); // Код страны
 
-                // (Опционально) Вибрация на телефоне, если поддерживается
-                if (tg.HapticFeedback) {
-                    tg.HapticFeedback.impactOccurred('light');
+                    // Формируем HTML для вывода информации о погоде
+                    resultArea.innerHTML = `
+<div class="weather-info">
+                            <div>
+                                <img src="${iconUrl}" alt="${weatherDescription}">
+                                <span>${temperature}°C</span>
+                            </div>
+                            <div>
+                                <strong>${cityName}, ${country}</strong>
+                                <br>
+                                <span>${weatherDescription.charAt(0).toUpperCase() + weatherDescription.slice(1)}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    // (Опционально) Вибрация при успешном получении данных
+                    if (tg.HapticFeedback) {
+                        tg.HapticFeedback.impactOccurred('light');
+                    }
+                } else {
+                    // Если данные о погоде не получены, хотя ответ был успешным
+                    throw new Error('Не удалось получить данные о погоде.');
                 }
+
             } catch (error) {
-                console.error('Ошибка запроса:', error);
-                resultArea.innerHTML = `<span class="error">❌ Ошибка: ${error.message}</span><br>Проверьте соединение или попробуйте позже.`;
+                console.error('Ошибка при получении погоды:', error); // Логируем ошибку в консоль для отладки
+
+                // Формируем сообщение об ошибке для пользователя
+                let userMessage = '<span class="error">❌ Произошла ошибка при получении данных.</span>';
+                // Обрабатываем распространенные ошибки
+                if (error.message.includes('404') || error.message.toLowerCase().includes('city not found')) {
+                    userMessage = '<span class="error">❌ Город не найден. Пожалуйста, проверьте название.</span>';
+                } else if (error.message.includes('401') || error.message.toLowerCase().includes('invalid api key')) {
+                    userMessage = '<span class="error">❌ Неверный API ключ. Проверьте его в настройках кода.</span>';
+                } else {
+                    // Если это другая ошибка, выводим ее сообщение
+                    userMessage += `<br>Подробности: ${escapeHtml(error.message)}`;
+                }
+                userMessage += '<br>Попробуйте позже или проверьте ваше интернет-соединение.';
+                resultArea.innerHTML = userMessage;
+
             } finally {
+                // В любом случае (успех или ошибка), разблокируем кнопку и скрываем индикатор загрузки
                 button.disabled = false;
                 loadingIndicator.style.display = 'none';
             }
         }
 
-        // Простейшая защита от XSS
-        function escapeHtml(str) {
-            return str
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#39;');
-        }
+        // Добавляем обработчик события клика на кнопку
+        button.addEventListener('click', fetchWeather);
 
-        // Вешаем обработчик на кнопку
-        button.addEventListener('click', fetchData);
+        // Добавляем обработчик события нажатия клавиши Enter в поле ввода города
+        cityInput.addEventListener('keypress', function (event) {
+            // Если нажата клавиша Enter (код 13)
+            if (event.key === 'Enter') {
+                fetchWeather(); // Вызываем функцию получения погоды
+            }
+        });
+
+        // (Опционально) Можно добавить приветствие при загрузке
+        // tg.MainButton.setText("Привет!");
+        // tg.MainButton.onClick(() => {
+        //     alert(`Привет, ${tg.initDataUnsafe.user.first_name}!`);
+        // });
+        // tg.MainButton.show();
     </script>
 </body>
 
