@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Mini App</title>
     <!-- Telegram WebApp SDK -->
-    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
             margin: 0;
@@ -78,75 +79,77 @@
         }
     </style>
 </head>
+
 <body>
-<div class="container">
-    <button id="fetchButton">📡 Запросить данные</button>
-    <div class="result" id="resultArea">
-        Нажмите кнопку, чтобы получить результат из API
+    <div class="container">
+        <button id="fetchButton">📡 Запросить данные</button>
+        <div class="result" id="resultArea">
+            Нажмите кнопку, чтобы получить результат из API
+        </div>
+        <div class="loading" id="loadingIndicator">⏳ Загрузка...</div>
     </div>
-    <div class="loading" id="loadingIndicator">⏳ Загрузка...</div>
-</div>
 
-<script>
-    // Инициализация Telegram WebApp
-    const tg = window.Telegram.WebApp;
-    tg.expand(); // Растягиваем на всё доступное пространство
-    tg.ready();
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.expand(); // Растягиваем на всё доступное пространство
+        tg.ready();
 
-    // Элементы DOM
-    const button = document.getElementById('fetchButton');
-    const resultArea = document.getElementById('resultArea');
-    const loadingIndicator = document.getElementById('loadingIndicator');
+        // Элементы DOM
+        const button = document.getElementById('fetchButton');
+        const resultArea = document.getElementById('resultArea');
+        const loadingIndicator = document.getElementById('loadingIndicator');
 
-    // Пример API: получаем случайный пост с JSONPlaceholder
-    const API_URL = 'https://jsonplaceholder.typicode.com/posts/1';
+        // Пример API: получаем случайный пост с JSONPlaceholder
+        const API_URL = 'https://jsonplaceholder.typicode.com/posts/1';
 
-    async function fetchData() {
-        // Блокируем кнопку на время запроса
-        button.disabled = true;
-        loadingIndicator.style.display = 'block';
-        resultArea.innerHTML = '';
+        async function fetchData() {
+            // Блокируем кнопку на время запроса
+            button.disabled = true;
+            loadingIndicator.style.display = 'block';
+            resultArea.innerHTML = '';
 
-        try {
-            const response = await fetch(API_URL);
-            if (!response.ok) {
-                throw new Error(`Ошибка HTTP: ${response.status}`);
-            }
-            const data = await response.json();
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) {
+                    throw new Error(`Ошибка HTTP: ${response.status}`);
+                }
+                const data = await response.json();
 
-            // Формируем красивый вывод
-            const output = `
+                // Формируем красивый вывод
+                const output = `
                 <strong>📌 ID:</strong> ${data.id}<br>
                 <strong>📝 Заголовок:</strong> ${escapeHtml(data.title)}<br>
                 <strong>📄 Текст:</strong><br> ${escapeHtml(data.body)}
             `;
-            resultArea.innerHTML = output;
+                resultArea.innerHTML = output;
 
-            // (Опционально) Вибрация на телефоне, если поддерживается
-            if (tg.HapticFeedback) {
-                tg.HapticFeedback.impactOccurred('light');
+                // (Опционально) Вибрация на телефоне, если поддерживается
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+            } catch (error) {
+                console.error('Ошибка запроса:', error);
+                resultArea.innerHTML = `<span class="error">❌ Ошибка: ${error.message}</span><br>Проверьте соединение или попробуйте позже.`;
+            } finally {
+                button.disabled = false;
+                loadingIndicator.style.display = 'none';
             }
-        } catch (error) {
-            console.error('Ошибка запроса:', error);
-            resultArea.innerHTML = `<span class="error">❌ Ошибка: ${error.message}</span><br>Проверьте соединение или попробуйте позже.`;
-        } finally {
-            button.disabled = false;
-            loadingIndicator.style.display = 'none';
         }
-    }
 
-    // Простейшая защита от XSS
-    function escapeHtml(str) {
-        return str
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;');
-    }
+        // Простейшая защита от XSS
+        function escapeHtml(str) {
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
 
-    // Вешаем обработчик на кнопку
-    button.addEventListener('click', fetchData);
-</script>
+        // Вешаем обработчик на кнопку
+        button.addEventListener('click', fetchData);
+    </script>
 </body>
+
 </html>
